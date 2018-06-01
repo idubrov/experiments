@@ -1,4 +1,6 @@
 #![feature(test)]
+#![feature(global_allocator)]
+#![feature(allocator_api)]
 extern crate rand;
 extern crate test;
 
@@ -10,6 +12,13 @@ use test::Bencher;
 
 pub struct ShortKey<'a>(&'a str);
 
+mod cntalloc;
+
+// Uncomment to track allocations count
+// #[global_allocator]
+static ALLOCATOR: cntalloc::CountingAllocator = cntalloc::CountingAllocator;
+
+
 pub trait Key {
     // Return the tuple of the first byte of a key plus the rest of the key
     fn key(&self) -> (Option<u8>, &[u8]);
@@ -17,7 +26,7 @@ pub trait Key {
 
 impl<'a> Key for ShortKey<'a> {
     fn key(&self) -> (Option<u8>, &[u8]) {
-        // Pretend we are a String with "_" first character!
+        // Pretend we are a String with "_" being the first character!
         (Some(b'_'), self.0.as_bytes())
     }
 }
@@ -97,6 +106,7 @@ fn example3() {
 fn example4() {
     let mut map = HashMap::new();
     map.insert("_hello".to_string(), "world".to_string());
+    // Create a lookup trait object!
     let lookup_key = &ShortKey("hello") as &Key;
     assert_eq!("world", map.get(lookup_key).unwrap());
 }
@@ -108,13 +118,17 @@ fn with_allocations(bencher: &mut Bencher) {
     let keys = gen_keys(LEN, KEY_LEN);
     let map = prepare_map(&keys);
 
+    let mut allocs = 0;
     bencher.iter(|| {
+        let start = cntalloc::CountingAllocator.allocations();
         let mut sum = 0;
         for key in &keys {
             sum += map[&format!("_{}", key)];
         }
+        allocs += cntalloc::CountingAllocator.allocations() - start;
         assert_eq!(keys.len(), sum);
     });
+    eprintln!("with_allocations: {}", allocs);
 }
 
 #[bench]
@@ -122,7 +136,9 @@ fn with_smart_allocations(bencher: &mut Bencher) {
     let keys = gen_keys(LEN, KEY_LEN);
     let map = prepare_map(&keys);
 
+    let mut allocs = 0;
     bencher.iter(|| {
+        let start = cntalloc::CountingAllocator.allocations();
         let mut sum = 0;
         for key in &keys {
             let mut lookup_key = String::with_capacity(key.len() + 1);
@@ -130,8 +146,10 @@ fn with_smart_allocations(bencher: &mut Bencher) {
             lookup_key += key;
             sum += map[&lookup_key];
         }
+        allocs += cntalloc::CountingAllocator.allocations() - start;
         assert_eq!(keys.len(), sum);
     });
+    eprintln!("with_smart_allocations: {}", allocs);
 }
 
 #[bench]
@@ -139,13 +157,17 @@ fn without_allocations(bencher: &mut Bencher) {
     let keys = gen_keys(LEN, KEY_LEN);
     let map = prepare_map(&keys);
 
+    let mut allocs = 0;
     bencher.iter(|| {
+        let start = cntalloc::CountingAllocator.allocations();
         let mut sum = 0;
         for key in &keys {
             sum += map[&ShortKey(&key) as &Key];
         }
+        allocs += cntalloc::CountingAllocator.allocations() - start;
         assert_eq!(keys.len(), sum);
     });
+    eprintln!("without_allocations: {}", allocs);
 }
 
 // Helpers
