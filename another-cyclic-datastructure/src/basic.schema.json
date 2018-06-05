@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lastName": {
+      "type": "string"
+    },
+    "age": {
+      "description": "Age in years",
+      "type": "number"
+    }
+  }
+}

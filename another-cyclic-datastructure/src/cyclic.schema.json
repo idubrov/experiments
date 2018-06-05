@@ -1,0 +1,29 @@
+{
+  "$ref": "#/definitions/Person",
+  "definitions": {
+    "Person": {
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "age": {
+          "description": "Age in years",
+          "type": "number"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Person"
+          }
+        }
+      }
+    }
+  }
+}
