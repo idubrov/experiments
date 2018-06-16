@@ -79,7 +79,7 @@ trait Greeter: Plugin {
     fn greet(&self, name: &str) -> String;
 }
 
-/// This is a formal version, which uses the first name and the last name.
+/// This is a formal version, which uses a first name and the a name.
 trait FormalGreeter: Plugin {
     fn greet_formal(&self, first_name: &str, last_name: &str) -> String;
 }
